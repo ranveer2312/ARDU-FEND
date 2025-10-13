@@ -1,28 +1,125 @@
 // src/features/Auth/services/authService.js
 
 import axios from 'axios';
-// This path is correct for the exact path: src/core/config/api.js
 import { BASE_URL, API_ENDPOINTS } from '../../../core/config/api'; 
 
-// 🎯 FIX: This line MUST be present to define 'api'
 const api = axios.create({
     baseURL: BASE_URL,
+    // Add Content-Type to avoid serialization issues
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
+// --- AUTH UTILITIES: TOKEN STORAGE CONSTANTS ---
+const TOKEN_KEY = 'user_jwt_token';
+const USER_KEY = 'user_data';
+
 /**
- * Handles the user registration API call.
- * @param {object} userData - The user registration data.
- * @returns {Promise<object>} The response data upon successful registration.
+ * Helper to handle and format API errors
  */
-export const registerUser = async (userData) => {
+const handleApiError = (error, defaultMessage) => {
+    if (error.response) {
+        const errorData = error.response.data;
+        const statusCode = error.response.status;
+
+        let errorMessage = errorData.message || defaultMessage;
+        
+        // 🎯 NEW: Logic to explicitly handle unapproved accounts
+        if (statusCode === 403) {
+             errorMessage = "Access Denied. Your account may not be approved yet by an admin, or your credentials are incorrect.";
+        }
+        // Existing logic for general 400 validation errors
+        else if (statusCode === 400 && errorData.errors && Array.isArray(errorData.errors)) {
+            errorMessage = errorData.errors.map(e => e.detail || e.message).join('; ');
+        }
+        
+        throw new Error(errorMessage);
+    }
+    throw new Error('Network Error: Could not reach the server.');
+};
+
+// --- AUTH UTILITIES: TOKEN STORAGE FUNCTIONS ---
+/**
+ * Stores the authentication data (JWT and user details) in LocalStorage.
+ * @param {object} data - The response object from the login API.
+ */
+export const saveAuthData = (data) => {
+    // 1. Store the JWT token
+    localStorage.setItem(TOKEN_KEY, data.jwt.token);
+    
+    // 2. Store minimal user details
+    const userDataToStore = { 
+        id: data.id, 
+        email: data.email, 
+        name: data.name, 
+        role: data.role, 
+        mainAdmin: data.mainAdmin 
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(userDataToStore));
+};
+
+/**
+ * Clears authentication data from LocalStorage.
+ */
+export const clearAuthData = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+};
+
+
+// --- NEW SERVICE: LOGIN ---
+/**
+ * Handles user login and stores the JWT token if successful and approved.
+ * @param {string} email - User's email.
+ * @param {string} password - User's password.
+ * @returns {Promise<object>} The response data upon successful login.
+ */
+export const loginUser = async (email, password) => {
     try {
-        // 'api' is used here
-        const response = await api.post(API_ENDPOINTS.REGISTER, userData); 
-        return response.data;
+        const payload = { email, password };
+        
+        // Uses the configured endpoint: {{baseurl}}/api/auth/login
+        const response = await api.post(API_ENDPOINTS.LOGIN, payload); 
+        
+        // On success, save the token and user data
+        saveAuthData(response.data);
+        
+        return response.data; 
     } catch (error) {
-        // Log the error for debugging
-        console.error('Registration failed:', error.response?.data || error.message);
-        // Throw an error with a message we can display to the user
-        throw new Error(error.response?.data?.message || 'Registration failed due to a server error.');
+        // Handle all errors, including unapproved accounts (403 or specific message)
+        handleApiError(error, 'Login failed. Please check your credentials.');
     }
 };
+
+// --- EXISTING SERVICE: LOGOUT ---
+export const logout = () => {
+    clearAuthData();
+    // Logic to redirect the user (e.g., window.location.href = '/login') should be in the component.
+};
+
+// --- EXISTING SERVICE: INITIAL REGISTRATION ---
+export const registerUser = async (basicUserData) => {
+    try {
+        const response = await api.post(API_ENDPOINTS.REGISTER, basicUserData);
+        return response.data;
+    } catch (error) {
+        handleApiError(error, 'Initial registration failed due to a server error.');
+    }
+};
+
+// --- EXISTING SERVICE: PROFILE UPDATE ---
+export const updateProfile = async (userId, profileData) => {
+    try {
+        // Conceptual endpoint: Using a PUT or PATCH request to update an existing user's profile
+        // NOTE: This assumes API_ENDPOINTS.USER_PROFILE is defined if the path changes.
+        const response = await api.patch(`/api/users/${userId}/profile`, profileData); 
+        return response.data;
+    } catch (error) {
+        handleApiError(error, 'Failed to update user profile. Please check the profile data format.');
+    }
+};
+
+
+
+
