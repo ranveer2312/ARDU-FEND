@@ -7,6 +7,24 @@ import { BASE_URL } from '../config/api';
 const API_BASE = `${BASE_URL}/api/posts`;
 const PUBLIC_API_BASE = `${BASE_URL}/api/public/posts`;
 
+// Attempt to salvage slightly malformed JSON responses
+function tryLenientParse(raw) {
+    if (!raw) return null;
+    let s = raw;
+    // Remove BOM if present
+    s = s.replace(/^\uFEFF/, '');
+    // Remove trailing commas before } or ]
+    s = s.replace(/,(\s*[}\]])/g, '$1');
+    // Very basic removal of dangerous/sensitive fields that might break expectations
+    s = s.replace(/"passwordHash"\s*:\s*"[^"]*"\s*,?/g, '');
+    // Try parsing after cleanup
+    try {
+        return JSON.parse(s);
+    } catch {
+        return null;
+    }
+}
+
 // 🧩 Utility for consistent fetch with error handling
 async function fetchApi(url, options = {}) {
     try {
@@ -24,7 +42,18 @@ async function fetchApi(url, options = {}) {
         }
 
         if (response.status === 204 || response.headers.get('content-length') === '0') return null;
-        return response.json();
+        // Always read as text first to avoid issues with incorrect content-type headers
+        const raw = await response.text();
+        if (!raw || raw.trim().length === 0) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            const lenient = tryLenientParse(raw);
+            if (lenient !== null) return lenient;
+            // Surface a concise parsing error that includes a small snippet of the payload
+            const snippet = raw.slice(0, 300);
+            throw new Error(`${e.message}. Response was not valid JSON. Snippet: ${snippet}`);
+        }
 
     } catch (error) {
         console.error('API fetch failed:', error);

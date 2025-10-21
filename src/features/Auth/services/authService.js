@@ -47,6 +47,15 @@ const handleApiError = (error, defaultMessage) => {
 export const saveAuthData = (data) => {
     // 1. Store the JWT token
     localStorage.setItem(TOKEN_KEY, data.jwt.token);
+    try {
+        // Also set a cookie for the JWT for server-assisted flows
+        const token = data?.jwt?.token;
+        const expiresSec = data?.jwt?.expiresInSeconds || 86400; // default 1 day if not provided
+        if (token && typeof document !== 'undefined') {
+            const expires = new Date(Date.now() + expiresSec * 1000).toUTCString();
+            document.cookie = `${encodeURIComponent(TOKEN_KEY)}=${encodeURIComponent(token)}; Expires=${expires}; Path=/; SameSite=Lax`;
+        }
+    } catch {}
     
     // 2. Store minimal user details
     const userDataToStore = { 
@@ -65,6 +74,12 @@ export const saveAuthData = (data) => {
 export const clearAuthData = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    try {
+        if (typeof document !== 'undefined') {
+            // Expire the cookie immediately
+            document.cookie = `${encodeURIComponent(TOKEN_KEY)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax`;
+        }
+    } catch {}
 };
 
 
@@ -76,19 +91,32 @@ export const clearAuthData = () => {
  * @returns {Promise<object>} The response data upon successful login.
  */
 export const loginUser = async (email, password) => {
+    const payload = { email, password };
+
+    // 1) Try member login first
     try {
-        const payload = { email, password };
-        
-        // Uses the configured endpoint: {{baseurl}}/api/auth/login
-        const response = await api.post(API_ENDPOINTS.LOGIN, payload); 
-        
-        // On success, save the token and user data
-        saveAuthData(response.data);
-        
-        return response.data; 
-    } catch (error) {
-        // Handle all errors, including unapproved accounts (403 or specific message)
-        handleApiError(error, 'Login failed. Please check your credentials.');
+        const memberResp = await api.post(API_ENDPOINTS.LOGIN, payload);
+        saveAuthData(memberResp.data);
+        return memberResp.data;
+    } catch (memberErr) {
+        // If explicitly forbidden, surface the approval message immediately
+        if (memberErr?.response?.status === 403) {
+            handleApiError(memberErr, 'Access denied. Your account may not be approved yet.');
+        }
+
+        // 2) If member login failed for other reasons (e.g., wrong endpoint/role), try admin login
+        try {
+            const adminResp = await api.post(API_ENDPOINTS.ADMIN_LOGIN, payload);
+            saveAuthData(adminResp.data);
+            return adminResp.data;
+        } catch (adminErr) {
+            // Preserve explicit 403 from admin endpoint too
+            if (adminErr?.response?.status === 403) {
+                handleApiError(adminErr, 'Access denied. Your account may not be approved yet.');
+            }
+            // Fallback unified error
+            handleApiError(adminErr, 'Login failed. Please check your credentials.');
+        }
     }
 };
 
