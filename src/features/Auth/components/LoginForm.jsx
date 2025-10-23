@@ -4,16 +4,16 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { loginUser } from '../services/authService';
-// Assuming you have a way to handle successful login (e.g., redirect or update context)
-// import { useNavigate } from 'react-router-dom'; 
 
-const LoginForm = () => {
+// 🛑 Accept onLoginSuccess prop
+const LoginForm = ({ onLoginSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     
-    // const navigate = useNavigate(); // Example for routing
+    // Define a minimum delay for the animation (e.g., 2 seconds)
+    const MIN_LOADER_TIME = 2000; 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,24 +23,42 @@ const LoginForm = () => {
             return;
         }
 
+        // Start API loading phase
         setIsLoading(true);
         setError(null);
+        
+        const startTime = Date.now();
 
         try {
-            const response = await loginUser(email, password);
+            await loginUser(email, password);
             
-            // Success: Token stored in LocalStorage by authService.js
-            console.log('Login successful!', response.name);
+            // --- SUCCESS LOGIC ---
+
+            // 1. Tell the parent (LoginPage) to show the Auto Rickshaw Loader
+            if (onLoginSuccess) {
+                onLoginSuccess();
+            }
+
+            // 2. Calculate remaining time needed for the animation
+            const elapsedTime = Date.now() - startTime;
+            const delay = Math.max(0, MIN_LOADER_TIME - elapsedTime);
+
+            // 3. Wait for the required delay to ensure the animation plays out
+            await new Promise(resolve => setTimeout(resolve, delay));
             
-            // Redirect user to the dashboard or home page
-            // navigate('/dashboard'); 
+            console.log('Login successful! Redirecting...');
+            
+            // 4. Perform the final redirection
             window.location.href = '/feed';
 
         } catch (err) {
-            // Error from handleApiError will be displayed
+            // --- ERROR LOGIC ---
             setError(err.message || 'An unexpected error occurred during login.');
         } finally {
-            setIsLoading(false);
+            // Stop API loading phase immediately on error, or after routing on success
+            if (error) { // Only stop on error, success relies on redirection
+                 setIsLoading(false);
+            }
         }
     };
 
@@ -78,9 +96,11 @@ const LoginForm = () => {
                 <Button 
                     type="submit" 
                     className="w-full" 
+                    // Button is disabled if waiting for API response OR if the loader animation has started
                     disabled={isLoading}
                 >
-                    {isLoading ? 'Logging In...' : 'Login'}
+                    {/* Display standard loading text while waiting for the API response */}
+                    {isLoading ? 'Processing...' : 'Login'} 
                 </Button>
             </form>
             

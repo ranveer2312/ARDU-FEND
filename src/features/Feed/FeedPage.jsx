@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../Auth/AuthContext';
+import { useAuth } from '../Auth/useAuth';
 import PostCard from './PostCard';
 import MainTopNav from '../../components/layouts/MainTopNav';
 import { getAuthHeaders, getCurrentUserInfo } from '../Auth/services/authHeaderService';
@@ -11,51 +11,23 @@ const FeedPage = () => {
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Try to salvage posts from malformed JSON (temporary client-side guard)
-    const tryParsePostsLenient = (raw) => {
-        if (!raw || typeof raw !== 'string') throw new Error('Empty response');
-        // First attempt: strict JSON.parse with common wrappers
-        try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed;
-            if (Array.isArray(parsed?.content)) return parsed.content;
-            if (Array.isArray(parsed?.data)) return parsed.data;
-        } catch {}
-        // Fallback: extract the first JSON array using bracket balancing
-        const start = raw.indexOf('[');
-        if (start !== -1) {
-            let depth = 0;
-            let end = -1;
-            for (let i = start; i < raw.length; i++) {
-                const ch = raw[i];
-                if (ch === '[') depth++;
-                if (ch === ']') {
-                    depth--;
-                    if (depth === 0) { end = i; break; }
-                }
-            }
-            if (end !== -1) {
-                const candidate = raw
-                    .substring(start, end + 1)
-                    .replace(/,\s*([\]\}])/g, '$1');
-                try {
-                    const parsed = JSON.parse(candidate);
-                    if (Array.isArray(parsed)) return parsed;
-                } catch {}
-            }
-        }
-        throw new Error('Response is not valid JSON.');
-    };
+
 
     // Fetch posts from the API
     const fetchPosts = async () => {
         try {
             setError(null);
+            const authHeaders = getAuthHeaders();
+            console.log('Auth headers:', authHeaders);
+            console.log('User:', user);
+            console.log('Token:', token);
+            
             const response = await fetch('http://localhost:8080/api/posts', {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
-                    ...getAuthHeaders()
+                    'Content-Type': 'application/json',
+                    ...authHeaders
                 }
             });
 
@@ -75,7 +47,16 @@ const FeedPage = () => {
             let rawBody;
             try {
                 rawBody = await response.text();
-                const postsData = tryParsePostsLenient(rawBody);
+                
+                // Try direct JSON parse first
+                let postsData;
+                try {
+                    postsData = JSON.parse(rawBody);
+                } catch {
+                    // If that fails, try with HTML entity decoding
+                    const decodedBody = rawBody.replace(/&quot;/g, '"');
+                    postsData = JSON.parse(decodedBody);
+                }
 
                 // Format posts data to ensure consistent structure
                 const formattedPosts = postsData.map(post => ({

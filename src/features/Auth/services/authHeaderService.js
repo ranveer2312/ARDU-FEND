@@ -37,3 +37,4 @@ export const handleAuthError = (error, defaultMessage = 'Authentication error') 
 };
 
 
+export const getAuthHeader = getAuthHeaders;
