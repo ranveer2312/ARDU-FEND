@@ -1,32 +1,82 @@
-// src/App.js - Use the correct Default Imports
+// src/App.js
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './features/Auth/AuthContext';
+import { useAuth } from './features/Auth/AuthContext';
+// Note: Assuming AuthProvider is correctly exported from this path based on your original file.
+import { AuthProvider } from './features/Auth/AuthContext';  // Import directly from AuthContext
 
-// ✅ CORRECT: Default imports for components that use 'export default'
+// --- Core Feature Imports ---
 import RegisterPage from './features/Auth/RegisterPage'; 
 import LoginPage from './features/Auth/LoginPage'; 
 import ProfilePage from "./features/Profile/ProfilePage";
+import MembersPage from "./features/Members/MembersPage";
+import FeedPage from './features/Feed/FeedPage';
+import UploadPage from './features/Upload/UploadPage';
 
-// 🛑 Reverting back to NAMED IMPORTS based on previous successful compilation
-import { FeedPage } from './features/Feed';     
-import { UploadPage } from './features/Upload'; 
+// --- NEW ADMIN IMPORT ---
+import AdminReviewPage from './features/Admin/AdminReviewPage';
+import PendingPosts from './features/Admin/PendingPosts';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import ProtectedRoute from './components/ProtectedRoute';
+import UserPendingPosts from './features/User/UserPendingPosts';
+// import StatusTabs from './components/StatusTabs';
 
 function App() {
+    const { isAuthenticated } = useAuth();
+
     return (
         <AuthProvider>
             <Router>
-                <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace />} /> 
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    
-                    <Route path="/dashboard" element={<h1>Dashboard (Protected)</h1>} />
-                    <Route path="/feed" element={<FeedPage />} />
-                    <Route path="/upload" element={<UploadPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                </Routes>
+                <div className="min-h-screen bg-gray-50">
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<Navigate to="/login" replace />} /> 
+                        <Route path="/register" element={<RegisterPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        
+                        {/* Protected/User Routes */}
+                        <Route path="/dashboard" element={<h1>Dashboard (Protected)</h1>} />
+                        <Route path="/feed" element={<FeedPage />} />
+                        <Route path="/upload" element={<UploadPage />} />
+                        <Route path="/members" element={<MembersPage />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        
+                        {/* Admin Routes - Now Protected */}
+                        <Route 
+                            path="/admin" 
+                            element={
+                                <ProtectedAdminRoute>
+                                    <PendingPosts />
+                                </ProtectedAdminRoute>
+                            } 
+                        />
+                        <Route 
+                            path="/admin/pending" 
+                            element={
+                                <ProtectedAdminRoute>
+                                    <PendingPosts />
+                                </ProtectedAdminRoute>
+                            } 
+                        />
+                        <Route 
+                            path="/admin/review" 
+                            element={
+                                <ProtectedAdminRoute>
+                                    <AdminReviewPage />
+                                </ProtectedAdminRoute>
+                            } 
+                        />
+                        <Route 
+                            path="/my-pending-posts" 
+                            element={
+                                <ProtectedRoute>
+                                    <UserPendingPosts />
+                                </ProtectedRoute>
+                            } 
+                        />
+                    </Routes>
+                </div>
             </Router>
         </AuthProvider>
     );

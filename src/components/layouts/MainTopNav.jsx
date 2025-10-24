@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, Plus, MessageSquare } from 'lucide-react';
-import { useAuth } from '../../features/Auth/AuthContext';
+import { useAuth } from '../../features/Auth/useAuth';
 
 const InitialsAvatar = ({ name = '', src }) => {
   const initials = name

@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../Auth/useAuth';
+import { Link, useLocation } from 'react-router-dom';
 import PostCard from './PostCard';
 import MainTopNav from '../../components/layouts/MainTopNav';
-import { getAuthHeaders, getCurrentUserInfo } from '../Auth/services/authHeaderService';
+import { getAuthHeaders } from '../Auth/services/authHeaderService';
 
 const FeedPage = () => {
     const { user, isAuthenticated, token } = useAuth();
+    const location = useLocation();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
-
+    const navigationTabs = [
+        { path: '/', label: 'Feed', icon: '📱' },
+        ...(user?.role === 'MAIN_ADMIN' ? [
+            { path: '/admin/pending', label: 'Review Posts', icon: '⚡' }
+        ] : [
+            { path: '/my-pending-posts', label: 'My Posts', icon: '📤' }
+        ])
+    ];
 
     // Fetch posts from the API
     const fetchPosts = async () => {
@@ -59,19 +68,22 @@ const FeedPage = () => {
                 }
 
                 // Format posts data to ensure consistent structure
-                const formattedPosts = postsData.map(post => ({
-                    id: post.id,
-                    content: post.caption || post.content || post.description || '',
-                    userName: post.userName || post.author || post.user?.name || post.user?.username || 'Unknown User',
-                    createdAt: new Date(post.createdAt || post.created_at || Date.now()),
-                    imageUrl: post.imageUrl || post.image_url || post.contentUrl || null,
-                    likes: post.likes || post.likeCount || 0,
-                    comments: post.comments || post.commentCount || 0,
-                    shares: post.shares || post.shareCount || 0,
-                    userLiked: post.userLiked || false,
-                    userCommented: post.userCommented || false,
-                    userShared: post.userShared || false
-                }));
+                const formattedPosts = postsData.map(post => {
+                    console.log('Raw post data:', post); // Debug log
+                    return {
+                        id: post.id,
+                        content: post.caption || post.content || post.description || '',
+                        userName: post.userName || post.author || post.user?.name || post.user?.username || 'Unknown User',
+                        createdAt: new Date(post.createdAt || post.created_at || Date.now()),
+                        imageUrl: post.imageUrl || post.image_url || post.contentUrl || null,
+                        likes: post.likes || post.likeCount || 0,
+                        comments: post.comments || post.commentCount || 0,
+                        shares: post.shares || post.shareCount || 0,
+                        userLiked: post.userLiked || false,
+                        userCommented: post.userCommented || false,
+                        userShared: post.userShared || false
+                    };
+                });
 
                 setPosts(formattedPosts);
             } catch (parseErr) {
@@ -91,13 +103,13 @@ const FeedPage = () => {
 
     // Initial load and refresh functionality
     useEffect(() => {
-        if (isAuthenticated && user) {
+        if (isAuthenticated) {
             fetchPosts();
         } else {
             setLoading(false);
             setError('Please log in to view posts.');
         }
-    }, [isAuthenticated, user, token]);
+    }, [isAuthenticated, token]);
 
     // Auto-refresh posts every 30 seconds
     useEffect(() => {
@@ -109,7 +121,7 @@ const FeedPage = () => {
         }, 30000); // 30 seconds
 
         return () => clearInterval(interval);
-    }, [isAuthenticated]);
+    }, [isAuthenticated, fetchPosts]);
 
     // Manual refresh function
     const handleRefresh = () => {
@@ -186,58 +198,81 @@ const FeedPage = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <MainTopNav />
-            {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="max-w-2xl mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Feed</h1>
-                            <p className="text-gray-600">Welcome back, {user?.name || 'User'}!</p>
-                        </div>
-                        <button
-                            onClick={handleRefresh}
-                            disabled={refreshing}
-                            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                            {refreshing ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                            )}
-                            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-                        </button>
+            
+            {/* Navigation Tabs */}
+            <div className="bg-white shadow-sm border-b sticky top-0 z-50">
+                <div className="max-w-2xl mx-auto">
+                    <div className="flex">
+                        {navigationTabs.map(tab => (
+                            <Link
+                                key={tab.path}
+                                to={tab.path}
+                                className={`
+                                    flex items-center px-6 py-4 space-x-2
+                                    ${location.pathname === tab.path 
+                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                        : 'text-gray-500 hover:text-gray-700'}
+                                    transition-colors duration-200
+                                `}
+                            >
+                                <span className="text-lg">{tab.icon}</span>
+                                <span>{tab.label}</span>
+                            </Link>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Posts Container */}
-            <div className="max-w-2xl mx-auto px-4 py-6">
-                {posts.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="text-gray-400 text-6xl mb-4">📝</div>
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Posts Yet</h3>
-                        <p className="text-gray-500 mb-6">Be the first to share something with the community!</p>
-                        <a
-                            href="/upload"
-                            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
-                        >
-                            Create Your First Post
-                        </a>
+            {/* Content Area */}
+            <div className="max-w-2xl mx-auto px-4 py-4">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Feed</h1>
+                        <p className="text-gray-600">Welcome back, {user?.name || 'User'}!</p>
                     </div>
-                ) : (
-                    <div className="space-y-6">
-                        {posts.map((post) => (
-                            <PostCard
-                                key={post.id}
-                                post={post}
-                                currentUser={user}
-                                onPostUpdate={handlePostUpdate}
-                            />
-                        ))}
-                    </div>
-                )}
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                        {refreshing ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        )}
+                        <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                    </button>
+                </div>
+
+                {/* Posts Container */}
+                <div className="space-y-6">
+                    {posts.length === 0 ? (
+                        <div className="text-center py-12">
+                            <div className="text-gray-400 text-6xl mb-4">📝</div>
+                            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Posts Yet</h3>
+                            <p className="text-gray-500 mb-6">Be the first to share something with the community!</p>
+                            <a
+                                href="/upload"
+                                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
+                            >
+                                Create Your First Post
+                            </a>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {posts.map((post) => (
+                                <PostCard
+                                    key={post.id}
+                                    post={post}
+                                    currentUser={user}
+                                    onPostUpdate={handlePostUpdate}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Refresh indicator */}

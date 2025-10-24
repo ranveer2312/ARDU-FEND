@@ -10,19 +10,19 @@ const api = axios.create({
 
 const withAuth = () => ({ headers: { ...getAuthHeaders() } });
 
-export const likePost = async (postId, username) => {
+export const likePost = async (postId, username, reactionType = 'like') => {
     const config = {
         ...withAuth(),
-        params: { username, reactionType: 'like' }
+        params: { username, reactionType }
     };
     const res = await api.post(`/api/posts/${postId}/reaction`, null, config);
     return res.data;
 };
 
-export const unlikePost = async (postId, username) => {
+export const unlikePost = async (postId, username, reactionType = 'like') => {
     const config = {
         ...withAuth(),
-        params: { username, reactionType: 'like' }
+        params: { username, reactionType }
     };
     const res = await api.delete(`/api/posts/${postId}/reaction`, config);
     return res.data;
