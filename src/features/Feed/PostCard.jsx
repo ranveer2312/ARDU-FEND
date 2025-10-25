@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../Auth/useAuth';
 import { addComment } from '../../services/postService';
 import { likePost, unlikePost } from '../Auth/services/reactionService';
+import { CommentsSection } from '../Comments';
 
 const PostCard = ({ post, currentUser, onPostUpdate }) => {
     const { token } = useAuth();
@@ -11,11 +12,8 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
         Array.isArray(post.comments) ? post.comments.length : (post.comments || 0)
     );
     const [shareCount, setShareCount] = useState(post.shares || 0);
-    const [showComments, setShowComments] = useState(false);
     const [showReactions, setShowReactions] = useState(false);
     const [showShareOptions, setShowShareOptions] = useState(false);
-    const [newComment, setNewComment] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
     const shareRef = useRef(null);
 
@@ -60,25 +58,9 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
 
 
 
-    const handleComment = async () => {
-        if (!newComment.trim()) return;
-        setIsSubmitting(true);
-        try {
-            await addComment(post.id, currentUser?.username || currentUser?.name, newComment, token);
-            setCommentCount((v) => v + 1);
-            setNewComment('');
-
-            onPostUpdate(post.id, { userCommented: true, comments: commentCount + 1 });
-        } catch (error) {
-            console.error('Error adding comment:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const toggleComments = () => {
-
-        setShowComments(!showComments);
+    const handleCommentCountChange = (newCount) => {
+        setCommentCount(newCount);
+        onPostUpdate && onPostUpdate(post.id, { comments: newCount });
     };
 
     const handleReaction = async (reactionType) => {
@@ -274,12 +256,12 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                     </div>
                     
                     <div className="flex gap-4">
-                        <button
-                            onClick={toggleComments}
-                            className="flex items-center gap-1 text-gray-600 hover:text-blue-600 text-sm"
-                        >
-                            💬 Comment ({commentCount})
-                        </button>
+                        <CommentsSection
+                            post={post}
+                            currentUser={currentUser}
+                            token={token}
+                            onCommentCountChange={handleCommentCountChange}
+                        />
                         <div className="relative" ref={shareRef}>
                             <button
                                 onClick={() => handleShare()}
@@ -348,36 +330,6 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                 </div>
             </div>
 
-            {showComments && (
-                <div className="border-t border-gray-100 bg-gray-50 p-4">
-                    <div className="flex gap-3 mb-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                            {(currentUser?.name || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 flex gap-2">
-                            <input
-                                type="text"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write a comment..."
-                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleComment(); } }}
-                            />
-                            <button 
-                                onClick={handleComment} 
-                                disabled={!newComment.trim() || isSubmitting} 
-                                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 hover:bg-blue-700"
-                            >
-                                {isSubmitting ? '...' : 'Post'}
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div className="text-center py-4 text-gray-600">
-                        Comments are saved to database. Display feature coming soon!
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
