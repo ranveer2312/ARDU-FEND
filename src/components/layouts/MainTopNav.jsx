@@ -1,7 +1,8 @@
 // src/components/layouts/MainTopNav.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Plus, MessageSquare } from 'lucide-react';
+// Import a new icon for 'Org' - e.g., 'Building' from lucide-react
+import { Home, Users, Plus, MessageSquare, Building } from 'lucide-react'; 
 import { useAuth } from '../../features/Auth/AuthContext';
 
 const InitialsAvatar = ({ name = '', src }) => {
@@ -87,6 +88,14 @@ export default function MainTopNav() {
                   <span className="hidden sm:inline">Register</span>
                 </Link>
               </>
+            )}
+            
+            {/* New 'Org' Link Added Here */}
+            {user && ( // Assuming 'Org' should only be visible to logged-in users
+              <Link to="/org" className={`${baseBtn} ${isActive('/org') ? activeBtn : ghostBtn}`}>
+                <Building className="w-4 h-4" /> 
+                <span className="hidden sm:inline">Org</span>
+              </Link>
             )}
 
             {/* Optional: Placeholder for GoogleTranslate component if added later */}
