@@ -1,9 +1,14 @@
 // src/components/layouts/MainTopNav.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+<<<<<<< HEAD
 // Import a new icon for 'Org' - e.g., 'Building' from lucide-react
 import { Home, Users, Plus, MessageSquare, Building } from 'lucide-react'; 
 import { useAuth } from '../../features/Auth/AuthContext';
+=======
+import { Home, Users, Plus, MessageSquare } from 'lucide-react';
+import { useAuth } from '../../features/Auth/useAuth';
+>>>>>>> 3fbb210c3473244df3d8d0920ef4aee5fbf0bc8e
 
 const InitialsAvatar = ({ name = '', src }) => {
   const initials = name

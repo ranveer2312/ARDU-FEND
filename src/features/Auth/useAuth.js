@@ -1,2 +1,5 @@
-// src/features/Auth/useAuth.js
-export { useAuth, AuthProvider } from "./AuthContext.jsx";
+import { useAuth, AuthProvider } from './AuthContext';
+
+export default useAuth;
+export { useAuth, AuthProvider };
+
