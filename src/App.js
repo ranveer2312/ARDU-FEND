@@ -13,6 +13,7 @@ import ProfilePage from "./features/Profile/ProfilePage";
 import MembersPage from "./features/Members/MembersPage";
 import FeedPage from './features/Feed/FeedPage';
 import UploadPage from './features/Upload/UploadPage';
+import { OrganizationPage } from './features/Organization';
 
 // --- NEW ADMIN IMPORT ---
 import AdminReviewPage from './features/Admin/AdminReviewPage';
@@ -41,6 +42,8 @@ function App() {
                         <Route path="/upload" element={<UploadPage />} />
                         <Route path="/members" element={<MembersPage />} />
                         <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/org" element={<OrganizationPage />} />
+                        <Route path="/organization" element={<OrganizationPage />} />
                         
                         {/* Admin Routes - Now Protected */}
                         <Route 
