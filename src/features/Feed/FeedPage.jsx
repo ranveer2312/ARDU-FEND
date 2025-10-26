@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../Auth/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 import PostCard from './PostCard';
@@ -22,14 +22,11 @@ const FeedPage = () => {
         ])
     ];
 
-    // Fetch posts from the API
-    const fetchPosts = async () => {
+    // Fetch posts from the API - wrapped in useCallback for stability
+    const fetchPosts = useCallback(async () => {
         try {
             setError(null);
             const authHeaders = getAuthHeaders();
-            console.log('Auth headers:', authHeaders);
-            console.log('User:', user);
-            console.log('Token:', token);
             
             const response = await fetch('http://localhost:8080/api/posts', {
                 method: 'GET',
@@ -46,40 +43,54 @@ const FeedPage = () => {
                 } else if (response.status === 403) {
                     throw new Error('Access denied. You don\'t have permission to view posts.');
                 } else {
-                    // Try to read server error text for more details
                     const errorText = await response.text().catch(() => '');
                     throw new Error(`Failed to fetch posts: ${response.status}${errorText ? ` - ${errorText.substring(0, 180)}...` : ''}`);
                 }
             }
 
-            // Attempt to parse JSON, but fall back to text for debugging
             let rawBody;
             try {
                 rawBody = await response.text();
                 
-                // Try direct JSON parse first
                 let postsData;
                 try {
                     postsData = JSON.parse(rawBody);
                 } catch {
-                    // If that fails, try with HTML entity decoding
                     const decodedBody = rawBody.replace(/&quot;/g, '"');
                     postsData = JSON.parse(decodedBody);
                 }
 
-                // Format posts data to ensure consistent structure
                 const formattedPosts = postsData.map(post => {
-                    console.log('Raw post data:', post); // Debug log
+                    const postUser = post.user || {};
+
                     return {
                         id: post.id,
                         content: post.caption || post.content || post.description || '',
-                        userName: post.userName || post.author || post.user?.name || post.user?.username || 'Unknown User',
+                        
+                        // Preserve the entire user object (from the new DTO structure)
+                        user: postUser, 
+                        
+                        // Extract userName from the nested structure, falling back to old fields
+                        userName: postUser.name || postUser.username || post.userName || post.author || 'Unknown User',
                         createdAt: new Date(post.createdAt || post.created_at || Date.now()),
-                        imageUrl: post.imageUrl || post.image_url || post.contentUrl || null,
+                        
+                        imageUrl: post.imageUrl || post.image_url || post.contentUrl || null, 
+                        
+                        // NEW FIX: Map the profile photo URL from the nested user object
+                        // It checks for profilePhotoUrl (ideal) and imageUrl (used in your backend upload)
+                        userProfilePhotoUrl: postUser.profilePhotoUrl || postUser.imageUrl || null, 
+                        
+                        // Default to empty array to prevent map() errors in PostCard
+                        recentReactions: post.recentReactions || [],
+                        recentComments: post.recentComments || [],
+                        
                         likes: post.likes || post.likeCount || 0,
                         comments: post.comments || post.commentCount || 0,
                         shares: post.shares || post.shareCount || 0,
-                        userLiked: post.userLiked || false,
+                        userReaction: post.userReaction || null, // Assuming the DTO includes userReaction
+                        
+                        // Note: userLiked, userCommented, etc., should typically come from the DTO
+                        userLiked: post.userLiked || (post.userReaction != null), 
                         userCommented: post.userCommented || false,
                         userShared: post.userShared || false
                     };
@@ -87,8 +98,6 @@ const FeedPage = () => {
 
                 setPosts(formattedPosts);
             } catch (parseErr) {
-                // Log the raw response body to help diagnose invalid JSON from backend
-                // Do not crash the page; show a concise error to the user
                 console.error('Raw response from /api/posts (first 500 chars):', (rawBody || '').substring(0, 500));
                 throw new Error(`${parseErr?.message || 'Failed to parse response'} - Response is not valid JSON.`);
             }
@@ -99,9 +108,9 @@ const FeedPage = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [isAuthenticated, token, user]); // Include user in dependency array for accurate context
 
-    // Initial load and refresh functionality
+    // Initial load
     useEffect(() => {
         if (isAuthenticated) {
             fetchPosts();
@@ -109,7 +118,7 @@ const FeedPage = () => {
             setLoading(false);
             setError('Please log in to view posts.');
         }
-    }, [isAuthenticated, token]);
+    }, [isAuthenticated, fetchPosts]);
 
     // Auto-refresh posts every 30 seconds
     useEffect(() => {
