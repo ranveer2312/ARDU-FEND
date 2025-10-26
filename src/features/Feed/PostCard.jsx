@@ -197,26 +197,49 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
 
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden max-w-lg mx-auto">
-            <div className="p-4 pb-3 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+        <div className="bg-white rounded-none md:rounded-lg shadow-none md:shadow-sm border-0 md:border border-gray-200 overflow-hidden w-full max-w-none md:max-w-lg mx-auto mb-2 md:mb-4">
+            <div className="p-3 md:p-4 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
                     {(post.userName || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">{post.userName || 'Unknown User'}</div>
-                    <div className="text-xs text-gray-500">{formatDate(post.createdAt)}</div>
+                    <div className="text-sm md:text-base font-semibold text-gray-900 truncate">{post.userName || 'Unknown User'}</div>
+                    <div className="text-xs md:text-sm text-gray-500">{formatDate(post.createdAt)}</div>
                 </div>
             </div>
 
-            <div className="px-4 pb-3 text-gray-900 whitespace-pre-wrap">{String(post.content || post.caption || '')}</div>
+            <div className="px-3 md:px-4 pb-3 text-sm md:text-base text-gray-900 whitespace-pre-wrap">{String(post.content || post.caption || '')}</div>
 
-            <div className="px-4 pb-3">
+            <div className="px-0 md:px-4 pb-3">
                 {renderMedia()}
             </div>
 
-            <div className="px-4 py-2 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                    <div className="relative">
+            {/* Like/Comment counts */}
+            {(likeCount > 0 || commentCount > 0) && (
+                <div className="px-3 md:px-4 py-2 flex items-center justify-between text-xs md:text-sm text-gray-500 border-b border-gray-100">
+                    {likeCount > 0 && (
+                        <div className="flex items-center gap-1 md:gap-2">
+                            <div className="flex -space-x-1">
+                                <div className="w-4 h-4 md:w-5 md:h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
+                                {userReaction && userReaction !== 'like' && (
+                                    <div className="w-4 h-4 md:w-5 md:h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
+                                        {userReaction === 'love' ? '❤️' : userReaction === 'haha' ? '😂' : userReaction === 'wow' ? '😮' : userReaction === 'sad' ? '😢' : '😡'}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-xs md:text-sm">{likeCount}</span>
+                        </div>
+                    )}
+                    {commentCount > 0 && (
+                        <div className="text-xs md:text-sm">{commentCount} comment{commentCount !== 1 ? 's' : ''}</div>
+                    )}
+                </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="px-2 md:px-4 py-2">
+                <div className="flex items-center justify-around">
+                    <div className="relative flex-1">
                         <button 
                             onClick={() => {
                                 console.log('MAIN BUTTON CLICKED!');
@@ -231,28 +254,26 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                                 setTimeout(() => setShowReactions(false), 300);
                             }}
                             disabled={isLiking}
-                            className={`flex items-center gap-1 text-sm px-3 py-2 rounded-lg ${
-                                userReaction ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-600 hover:bg-gray-100'
+                            className={`w-full flex items-center justify-center gap-1 md:gap-2 py-2 px-1 md:px-3 rounded-lg text-xs md:text-sm font-medium transition-colors ${
+                                userReaction ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
                             }`}
                         >
-                            {userReaction === 'like' ? '👍' : 
-                             userReaction === 'love' ? '❤️' : 
-                             userReaction === 'haha' ? '😂' : 
-                             userReaction === 'wow' ? '😮' : 
-                             userReaction === 'sad' ? '😢' : 
-                             userReaction === 'angry' ? '😡' : '👍'}
-                            {userReaction === 'like' ? 'Like' : 
-                             userReaction === 'love' ? 'Love' : 
-                             userReaction === 'haha' ? 'Haha' : 
-                             userReaction === 'wow' ? 'Wow' : 
-                             userReaction === 'sad' ? 'Sad' : 
-                             userReaction === 'angry' ? 'Angry' : 'Like'}
-                            {likeCount > 0 ? ` (${likeCount})` : ''}
+                            <svg className="w-4 h-4 md:w-5 md:h-5" fill={userReaction ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                            </svg>
+                            <span className="hidden sm:inline">
+                                {userReaction === 'like' ? 'Like' : 
+                                 userReaction === 'love' ? 'Love' : 
+                                 userReaction === 'haha' ? 'Haha' : 
+                                 userReaction === 'wow' ? 'Wow' : 
+                                 userReaction === 'sad' ? 'Sad' : 
+                                 userReaction === 'angry' ? 'Angry' : 'Like'}
+                            </span>
                         </button>
 
                         {showReactions && (
                             <div 
-                                className="absolute bottom-full left-0 mb-2 bg-white rounded-full shadow-lg border p-2 flex gap-1 z-10"
+                                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-white rounded-full shadow-lg border p-1 md:p-2 flex gap-1 z-10"
                                 onMouseEnter={() => setShowReactions(true)}
                                 onMouseLeave={() => setShowReactions(false)}
                             >
@@ -263,7 +284,7 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                                             console.log('EMOJI CLICKED:', reaction.type, reaction.emoji);
                                             handleReaction(reaction.type);
                                         }}
-                                        className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-lg transition-transform hover:scale-125"
+                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-base md:text-lg transition-transform hover:scale-125"
                                         title={reaction.label}
                                     >
                                         {reaction.emoji}
@@ -273,20 +294,26 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                         )}
                     </div>
                     
-                    <div className="flex gap-4">
+                    <button
+                        onClick={toggleComments}
+                        className="flex-1 flex items-center justify-center gap-1 md:gap-2 py-2 px-1 md:px-3 rounded-lg text-xs md:text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span className="hidden sm:inline">Comment</span>
+                    </button>
+                    
+                    <div className="relative flex-1" ref={shareRef}>
                         <button
-                            onClick={toggleComments}
-                            className="flex items-center gap-1 text-gray-600 hover:text-blue-600 text-sm"
+                            onClick={() => handleShare()}
+                            className="w-full flex items-center justify-center gap-1 md:gap-2 py-2 px-1 md:px-3 rounded-lg text-xs md:text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                         >
-                            💬 Comment ({commentCount})
+                            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                            </svg>
+                            <span className="hidden sm:inline">Share</span>
                         </button>
-                        <div className="relative" ref={shareRef}>
-                            <button
-                                onClick={() => handleShare()}
-                                className="flex items-center gap-1 text-gray-600 hover:text-blue-600 text-sm px-3 py-2 rounded-lg hover:bg-gray-100"
-                            >
-                                📤 Share
-                            </button>
 
                             {showShareOptions && (
                                 <>
@@ -343,15 +370,14 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                                     </div>
                                 </>
                             )}
-                        </div>
                     </div>
                 </div>
             </div>
 
             {showComments && (
-                <div className="border-t border-gray-100 bg-gray-50 p-4">
-                    <div className="flex gap-3 mb-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                <div className="border-t border-gray-100 bg-gray-50 p-3 md:p-4">
+                    <div className="flex gap-2 md:gap-3 mb-4">
+                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                             {(currentUser?.name || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 flex gap-2">
@@ -360,20 +386,20 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
-                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="flex-1 px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleComment(); } }}
                             />
                             <button 
                                 onClick={handleComment} 
                                 disabled={!newComment.trim() || isSubmitting} 
-                                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 hover:bg-blue-700"
+                                className="px-3 md:px-4 py-2 bg-blue-600 text-white text-xs md:text-sm rounded-lg disabled:opacity-50 hover:bg-blue-700"
                             >
                                 {isSubmitting ? '...' : 'Post'}
                             </button>
                         </div>
                     </div>
                     
-                    <div className="text-center py-4 text-gray-600">
+                    <div className="text-center py-4 text-gray-600 text-xs md:text-sm">
                         Comments are saved to database. Display feature coming soon!
                     </div>
                 </div>
