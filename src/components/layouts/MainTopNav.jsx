@@ -1,7 +1,7 @@
 // src/components/layouts/MainTopNav.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Plus, MessageSquare } from 'lucide-react';
+import { Home, Users, Plus, MessageSquare, Building } from 'lucide-react';
 import { useAuth } from '../../features/Auth/AuthContext';
 
 const InitialsAvatar = ({ name = '', src }) => {
@@ -74,10 +74,17 @@ export default function MainTopNav() {
             )}
 
             {user ? (
-              <Link to="/profile" className={`${baseBtn} ${isActive('/profile') ? activeBtn : ghostBtn}`}>
-                <InitialsAvatar name={user?.name} src={user?.avatar} />
-                <span className="hidden sm:inline">{user?.name}</span>
-              </Link>
+              <>
+                <Link to="/profile" className={`${baseBtn} ${isActive('/profile') ? activeBtn : ghostBtn}`}>
+                  <InitialsAvatar name={user?.name} src={user?.avatar} />
+                  <span className="hidden sm:inline">{user?.name}</span>
+                </Link>
+                
+                <Link to="/org" className={`${baseBtn} ${isActive('/org') ? activeBtn : ghostBtn}`}>
+                  <Building className="w-4 h-4" />
+                  <span className="hidden sm:inline">Org</span>
+                </Link>
+              </>
             ) : (
               <>
                 <Link to="/login" className={`${baseBtn} ${isActive('/login') ? activeBtn : ghostBtn}`}>

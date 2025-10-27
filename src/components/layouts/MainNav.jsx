@@ -10,7 +10,7 @@ import {
     Globe, 
     LogIn, 
     LogOut, 
-    Compass, 
+    Compass,     // 🧭 Explore icon
     Clapperboard, 
     Send, 
     Heart, 
@@ -160,7 +160,7 @@ const GoogleTranslate = () => (
     </div>
 );
 
-// --- MAINNAV COMPONENT (Updated with Members Icon) ---
+// --- MAINNAV COMPONENT (Updated with Members and Explore) ---
 export const MainNav = () => {
     const { user, isLoggedIn, isApproved, login, logout, toggleApproval } = useAuth();
     const { location, navigate } = useLocation(); 
@@ -179,10 +179,15 @@ export const MainNav = () => {
                         <Home className="w-6 h-6" />
                     </RouterNavLink>
 
-                    {/* ✅ Replaced Search with Members */}
                     <RouterNavLink to="/members" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'hover:bg-neutral-900'}`} title="Members">
                         <Users className="w-6 h-6" />
                     </RouterNavLink>
+
+                    {/* ✅ New Section: Explore */}
+                    <RouterNavLink to="/explore" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'hover:bg-neutral-900'}`} title="Explore">
+                        <Compass className="w-6 h-6" />
+                    </RouterNavLink>
+                    {/* --------------------------- */}
 
                     <RouterNavLink to="/messages" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'hover:bg-neutral-900'}`} title="Messages">
                         <Send className="w-6 h-6" />
@@ -211,10 +216,15 @@ export const MainNav = () => {
                         <Home className="w-6 h-6" />
                     </RouterNavLink>
 
-                    {/* ✅ Replaced Search with Members here too */}
                     <RouterNavLink to="/members" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : ''}`} title="Members">
                         <Users className="w-6 h-6" />
                     </RouterNavLink>
+                    
+                    {/* ✅ New Section: Explore */}
+                    <RouterNavLink to="/explore" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : ''}`} title="Explore">
+                        <Compass className="w-6 h-6" />
+                    </RouterNavLink>
+                    {/* --------------------------- */}
 
                     <RouterNavLink to="/upload" className={({ isActive }) => `p-2 rounded-lg ${isActive ? 'bg-neutral-800' : ''}`} title="Create">
                         <Plus className="w-6 h-6" />
@@ -262,9 +272,45 @@ export default function App() {
                                 This simulates the main application content for the page: <strong className="font-mono text-indigo-500">{location?.pathname}</strong>
                             </p>
                         )}
+                        {/* Mock Toggle Button for testing */}
+                        <div className="mt-8">
+                            <MockAuthToggle />
+                        </div>
                     </div>
                 </div>
             </div>
         </MockAuthProvider>
     );
 }
+
+// Mock Component for Toggling Auth/Approval Status
+const MockAuthToggle = () => {
+    const { isLoggedIn, isApproved, login, logout, toggleApproval, user } = useAuth();
+
+    return (
+        <div className="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 text-sm">
+            <p className="font-semibold text-gray-700 dark:text-gray-300">Mock Auth Controls (for testing):</p>
+            <div className="flex space-x-2">
+                {isLoggedIn ? (
+                    <Button onClick={logout} variant="destructive" size="sm">
+                        <LogOut className="w-4 h-4" /> Logout
+                    </Button>
+                ) : (
+                    <Button onClick={login} variant="default" size="sm">
+                        <LogIn className="w-4 h-4" /> Login
+                    </Button>
+                )}
+                {isLoggedIn && (
+                    <Button onClick={toggleApproval} variant="ghost" size="sm" className={isApproved ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"}>
+                        {isApproved ? 'Unapprove User' : 'Approve User'}
+                    </Button>
+                )}
+            </div>
+            {isLoggedIn && (
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Status: **{isApproved ? 'Approved' : 'Awaiting Approval'}**
+                </p>
+            )}
+        </div>
+    );
+};

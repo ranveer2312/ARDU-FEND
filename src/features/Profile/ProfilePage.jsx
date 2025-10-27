@@ -1,7 +1,8 @@
 // src/features/Profile/ProfilePage.jsx (Final Combined File)
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
+
 // 🛑 UPDATED: Import all admin service functions
 import { 
     getUserById, 
@@ -190,7 +191,7 @@ const ProfilePage = () => {
   return (
     <div className="max-w-4xl mx-auto mt-10 p-4 sm:p-8 bg-white shadow-2xl rounded-2xl">
       
-      {/* ⬅️ BACK TO DASHBOARD BUTTON */}
+      {/* ⬅️ BACK TO DASHBOARD BUTTON */}z
       <button
         onClick={handleBackToDashboard}
         className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition duration-150 mb-6 px-3 py-1 rounded-lg border border-transparent hover:border-blue-200"

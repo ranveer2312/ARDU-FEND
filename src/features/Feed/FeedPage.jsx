@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../Auth/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 import PostCard from './PostCard';
-import MainTopNav from '../../components/layouts/MainTopNav';
 import { getAuthHeaders } from '../Auth/services/authHeaderService';
 
 const FeedPage = () => {
@@ -236,8 +235,6 @@ const FeedPage = () => {
     // Main feed content
     return (
         <div className="min-h-screen bg-gray-50">
-            <MainTopNav />
-            
             {/* Navigation Tabs */}
             <div className="bg-white shadow-sm border-b sticky top-0 z-50">
                 <div className="max-w-2xl mx-auto">
