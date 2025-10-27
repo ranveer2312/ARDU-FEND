@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import ReactionDetails from './ReactionDetails';
 
 const EmojiReactions = ({ postId, currentUser, token, onReaction }) => {
     const [showReactions, setShowReactions] = useState(false);
     const [userReaction, setUserReaction] = useState(null);
     const [reactionCounts, setReactionCounts] = useState({});
     const [totalReactions, setTotalReactions] = useState(0);
+    const [showReactionDetails, setShowReactionDetails] = useState(false);
 
     const reactionTypes = [
         { type: 'LIKE', emoji: '👍', color: 'text-blue-500' },
@@ -131,7 +133,10 @@ const EmojiReactions = ({ postId, currentUser, token, onReaction }) => {
             </div>
             
             {totalReactions > 0 && (
-                <div className="flex items-center gap-1 text-sm text-gray-600 cursor-pointer hover:underline">
+                <div 
+                    className="flex items-center gap-1 text-sm text-gray-600 cursor-pointer hover:underline"
+                    onClick={() => setShowReactionDetails(true)}
+                >
                     <div className="flex -space-x-1">
                         {Object.entries(reactionCounts)
                             .filter(([_, count]) => count > 0)
@@ -145,6 +150,14 @@ const EmojiReactions = ({ postId, currentUser, token, onReaction }) => {
                     </div>
                     <span className="ml-1">{totalReactions}</span>
                 </div>
+            )}
+
+            {/* Reaction Details Modal */}
+            {showReactionDetails && (
+                <ReactionDetails 
+                    postId={postId} 
+                    onClose={() => setShowReactionDetails(false)} 
+                />
             )}
         </div>
     );

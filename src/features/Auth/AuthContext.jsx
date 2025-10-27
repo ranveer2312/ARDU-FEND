@@ -87,6 +87,7 @@ export const AuthProvider = ({ children }) => {
         user: authData.user,
         token: authData.token,
         isAuthenticated: authData.isAuthenticated,
+        isAdmin: authData.user?.role === 'ADMIN' || authData.user?.role === 'MAIN_ADMIN',
         isLoading,
         login,
         logout,

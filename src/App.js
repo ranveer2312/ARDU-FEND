@@ -17,7 +17,6 @@ import { OrganizationPage } from './features/Organization';
 
 // --- NEW ADMIN IMPORT ---
 import AdminReviewPage from './features/Admin/AdminReviewPage';
-import PendingPosts from './features/Admin/PendingPosts';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import ProtectedRoute from './components/ProtectedRoute';
 import UserPendingPosts from './features/User/UserPendingPosts';
@@ -50,7 +49,7 @@ function App() {
                             path="/admin" 
                             element={
                                 <ProtectedAdminRoute>
-                                    <PendingPosts />
+                                    <AdminReviewPage />
                                 </ProtectedAdminRoute>
                             } 
                         />
@@ -58,7 +57,7 @@ function App() {
                             path="/admin/pending" 
                             element={
                                 <ProtectedAdminRoute>
-                                    <PendingPosts />
+                                    <AdminReviewPage />
                                 </ProtectedAdminRoute>
                             } 
                         />

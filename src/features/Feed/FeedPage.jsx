@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../Auth/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 import PostCard from './PostCard';
@@ -22,14 +22,11 @@ const FeedPage = () => {
         ])
     ];
 
-    // Fetch posts from the API
-    const fetchPosts = async () => {
+    // Fetch posts from the API - wrapped in useCallback for stability
+    const fetchPosts = useCallback(async () => {
         try {
             setError(null);
             const authHeaders = getAuthHeaders();
-            console.log('Auth headers:', authHeaders);
-            console.log('User:', user);
-            console.log('Token:', token);
             
             const response = await fetch('http://localhost:8080/api/posts', {
                 method: 'GET',
@@ -46,49 +43,91 @@ const FeedPage = () => {
                 } else if (response.status === 403) {
                     throw new Error('Access denied. You don\'t have permission to view posts.');
                 } else {
-                    // Try to read server error text for more details
                     const errorText = await response.text().catch(() => '');
                     throw new Error(`Failed to fetch posts: ${response.status}${errorText ? ` - ${errorText.substring(0, 180)}...` : ''}`);
                 }
             }
 
-            // Attempt to parse JSON, but fall back to text for debugging
             let rawBody;
             try {
                 rawBody = await response.text();
                 
-                // Try direct JSON parse first
                 let postsData;
                 try {
                     postsData = JSON.parse(rawBody);
                 } catch {
-                    // If that fails, try with HTML entity decoding
                     const decodedBody = rawBody.replace(/&quot;/g, '"');
                     postsData = JSON.parse(decodedBody);
                 }
 
-                // Format posts data to ensure consistent structure
-                const formattedPosts = postsData.map(post => {
-                    console.log('Raw post data:', post); // Debug log
+                const formattedPosts = await Promise.all(postsData.map(async (post) => {
+                    const postUser = post.user || {};
+
+                    // Fetch reaction summary for each post
+                    let reactionData = {
+                        likes: 0,
+                        userReaction: null,
+                        recentReactors: []
+                    };
+
+                    try {
+                        const reactionResponse = await fetch(`http://localhost:8080/api/posts/${post.id}/reactions/summary`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                ...authHeaders
+                            }
+                        });
+                        
+                        if (reactionResponse.ok) {
+                            const reactionSummary = await reactionResponse.json();
+                            reactionData = {
+                                likes: reactionSummary.total || 0,
+                                userReaction: reactionSummary.userReaction || null,
+                                recentReactors: reactionSummary.recentReactors || []
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching reactions for post ${post.id}:`, error);
+                    }
+
                     return {
                         id: post.id,
                         content: post.caption || post.content || post.description || '',
-                        userName: post.userName || post.author || post.user?.name || post.user?.username || 'Unknown User',
+                        
+                        // Preserve the entire user object (from the new DTO structure)
+                        user: postUser,
+                        
+                        // Extract userName from the nested structure, falling back to old fields
+                        userName: postUser.name || postUser.username || post.userName || post.author || 'Unknown User',
                         createdAt: new Date(post.createdAt || post.created_at || Date.now()),
+                        
                         imageUrl: post.imageUrl || post.image_url || post.contentUrl || null,
-                        likes: post.likes || post.likeCount || 0,
+                        
+                        // NEW FIX: Map the profile photo URL from the nested user object
+                        // It checks for profilePhotoUrl (ideal) and imageUrl (used in your backend upload)
+                        userProfilePhotoUrl: postUser.profilePhotoUrl || postUser.imageUrl || null,
+                        
+                        // Default to empty array to prevent map() errors in PostCard
+                        recentReactions: post.recentReactions || [],
+                        recentComments: post.recentComments || [],
+                        
+                        // Use fetched reaction data
+                        likes: reactionData.likes,
                         comments: post.comments || post.commentCount || 0,
                         shares: post.shares || post.shareCount || 0,
-                        userLiked: post.userLiked || false,
+                        reactors: post.reactors || [],
+                        userReaction: reactionData.userReaction,
+                        recentReactors: reactionData.recentReactors,
+                        
+                        userLiked: reactionData.userReaction != null,
                         userCommented: post.userCommented || false,
                         userShared: post.userShared || false
                     };
-                });
+                }));
 
                 setPosts(formattedPosts);
             } catch (parseErr) {
-                // Log the raw response body to help diagnose invalid JSON from backend
-                // Do not crash the page; show a concise error to the user
                 console.error('Raw response from /api/posts (first 500 chars):', (rawBody || '').substring(0, 500));
                 throw new Error(`${parseErr?.message || 'Failed to parse response'} - Response is not valid JSON.`);
             }
@@ -99,9 +138,9 @@ const FeedPage = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [isAuthenticated, token, user]); // Include user in dependency array for accurate context
 
-    // Initial load and refresh functionality
+    // Initial load
     useEffect(() => {
         if (isAuthenticated) {
             fetchPosts();
@@ -109,7 +148,7 @@ const FeedPage = () => {
             setLoading(false);
             setError('Please log in to view posts.');
         }
-    }, [isAuthenticated, token]);
+    }, [isAuthenticated, fetchPosts]);
 
     // Auto-refresh posts every 30 seconds
     useEffect(() => {
@@ -131,9 +170,9 @@ const FeedPage = () => {
 
     // Handle post updates (when user interacts with posts)
     const handlePostUpdate = (postId, updatedData) => {
-        setPosts(prevPosts => 
-            prevPosts.map(post => 
-                post.id === postId 
+        setPosts(prevPosts =>
+            prevPosts.map(post =>
+                post.id === postId
                     ? { ...post, ...updatedData }
                     : post
             )
@@ -209,8 +248,8 @@ const FeedPage = () => {
                                 to={tab.path}
                                 className={`
                                     flex items-center px-6 py-4 space-x-2
-                                    ${location.pathname === tab.path 
-                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                    ${location.pathname === tab.path
+                                        ? 'border-b-2 border-blue-500 text-blue-600'
                                         : 'text-gray-500 hover:text-gray-700'}
                                     transition-colors duration-200
                                 `}

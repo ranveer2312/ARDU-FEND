@@ -1,9 +1,16 @@
 // src/features/Profile/ProfilePage.jsx (Final Combined File)
 
 import React, { useEffect, useState, useCallback } from "react";
-// 🛑 IMPORTANT: Add the useNavigate import from your router library
 import { useNavigate } from 'react-router-dom'; 
-import { getUserById, uploadUserImage, updateUser } from "./services/profileService"; 
+// 🛑 UPDATED: Import all admin service functions
+import { 
+    getUserById, 
+    uploadUserImage, 
+    updateUser, 
+    getAdminById,      // NEW
+    updateAdmin,       // NEW
+    uploadAdminImage   // NEW
+} from "./services/profileService"; 
 import { useAuth } from '../Auth/useAuth'; 
 
 // =================================================================
@@ -37,7 +44,8 @@ const InputField = ({ label, name, type = "text", value, onChange }) => (
 // --- NESTED EDIT FORM COMPONENT ---
 // =================================================================
 
-const EditProfileForm = ({ profile, setProfile, setEditMode }) => {
+// 🛑 UPDATED: Now accepts userRole prop
+const EditProfileForm = ({ profile, setProfile, setEditMode, userRole }) => {
   const [formData, setFormData] = useState({
     name: profile.username || profile.name || "",
     dlNumber: profile.dlNumber || "",
@@ -64,8 +72,12 @@ const EditProfileForm = ({ profile, setProfile, setEditMode }) => {
         acc[key] = formData[key] === '' ? null : formData[key];
         return acc;
       }, {});
+      
+      // 🛑 CORE FIX: Select the correct update function based on role
+      const isAdmin = userRole === 'ADMIN' || userRole === 'MAIN_ADMIN';
+      const updateFunction = isAdmin ? updateAdmin : updateUser;
 
-      const res = await updateUser(profile.id, dataToSend);
+      const res = await updateFunction(profile.id, dataToSend); // Use the selected function
       setProfile(res);
       setEditMode(false); 
       alert("Profile updated successfully!");
@@ -74,6 +86,9 @@ const EditProfileForm = ({ profile, setProfile, setEditMode }) => {
       alert("Failed to update profile. Check console for details.");
     }
   };
+  
+  // Helper to check if the current user is an Admin
+  const isCurrentUserAdmin = userRole === 'ADMIN' || userRole === 'MAIN_ADMIN';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg">
@@ -123,36 +138,45 @@ const EditProfileForm = ({ profile, setProfile, setEditMode }) => {
 // =================================================================
 
 const ProfilePage = () => {
-  // 🎯 Initialize the useNavigate hook
   const navigate = useNavigate(); 
   
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Helper to determine if the current user is an admin
+  const isCurrentUserAdmin = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';
 
   // Function to handle navigation
   const handleBackToDashboard = () => {
-    // 🎯 Use the navigate function to go to the dashboard route
     navigate('/dashboard'); 
   };
 
   // Fetch profile data
   useEffect(() => {
     if (user?.id) {
-      getUserById(user.id)
+      
+      // 🛑 CORE FIX 1: Conditional fetching based on role
+      const fetchFunction = isCurrentUserAdmin ? getAdminById : getUserById;
+      
+      fetchFunction(user.id)
         .then((data) => setProfile(data))
         .catch((err) => console.error("Error fetching profile:", err));
     }
-  }, [user]);
+  }, [user, isCurrentUserAdmin]); // Added isCurrentUserAdmin to dependency array
 
   // Handle image upload logic
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    
+    // 🛑 CORE FIX 2: Conditional upload based on role
+    const uploadFunction = isCurrentUserAdmin ? uploadAdminImage : uploadUserImage;
+    
     try {
-      const res = await uploadUserImage(user.id, file);
+      const res = await uploadFunction(user.id, file); // Use the correct upload function
       setProfile((prev) => ({ ...prev, imageUrl: res.url }));
     } catch (err) {
       console.error("Image upload failed:", err);
@@ -198,7 +222,11 @@ const ProfilePage = () => {
         <h2 className="text-3xl font-bold mt-4 text-gray-800">{profile.name}</h2>
         <p className="text-lg text-gray-600">{profile.email}</p>
         <p className="text-sm text-gray-400 mt-1">
-          Role: <span className="font-semibold">{profile.role}</span> | Status: <span className={`font-semibold ${profile.approvalStatus === 'APPROVED' ? 'text-green-600' : 'text-yellow-600'}`}>{profile.approvalStatus}</span>
+          Role: <span className="font-semibold">{profile.role}</span> 
+          {/* Only show approval status for non-admins (users) */}
+          {!isCurrentUserAdmin && (
+            <span> | Status: <span className={`font-semibold ${profile.approvalStatus === 'APPROVED' ? 'text-green-600' : 'text-yellow-600'}`}>{profile.approvalStatus}</span></span>
+          )}
         </p>
         
         <button
@@ -211,7 +239,13 @@ const ProfilePage = () => {
 
       {editMode ? (
         // EDIT FORM MODE
-        <EditProfileForm profile={profile} setProfile={setProfile} setEditMode={setEditMode} />
+        // 🛑 Pass the user role to the form for conditional update logic
+        <EditProfileForm 
+            profile={profile} 
+            setProfile={setProfile} 
+            setEditMode={setEditMode} 
+            userRole={user.role} // Pass the role
+        />
       ) : (
         // VIEW MODE (Detailed Information)
         <div className="grid grid-cols-1 gap-8 text-gray-700">
@@ -233,26 +267,30 @@ const ProfilePage = () => {
             </div>
           </div>
           
-          {/* ASSOCIATION DETAILS */}
-          <div className="bg-gray-50 p-6 rounded-xl shadow-inner">
-            <h3 className="text-xl font-bold mb-4 text-blue-700 border-b pb-2">Association Info</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1">
-              <DetailItem label="Badge Number" value={profile.badgeNumber || 'N/A'} />
-              <DetailItem label="Active Status" value={profile.active ? 'Active' : 'Inactive'} />
-              <DetailItem label="Date of Joining" value={formatDate(profile.dateOfJoiningOrRenewal)} />
-              <DetailItem label="Expiry Date" value={formatDate(profile.expiryDate)} />
+          {/* ASSOCIATION DETAILS (Only display for regular users, not Admins) */}
+          {!isCurrentUserAdmin && (
+            <div className="bg-gray-50 p-6 rounded-xl shadow-inner">
+              <h3 className="text-xl font-bold mb-4 text-blue-700 border-b pb-2">Association Info</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1">
+                <DetailItem label="Badge Number" value={profile.badgeNumber || 'N/A'} />
+                <DetailItem label="Active Status" value={profile.active ? 'Active' : 'Inactive'} />
+                <DetailItem label="Date of Joining" value={formatDate(profile.dateOfJoiningOrRenewal)} />
+                <DetailItem label="Expiry Date" value={formatDate(profile.expiryDate)} />
+              </div>
             </div>
-          </div>
+          )}
           
-          {/* NOMINEE DETAILS */}
-          <div className="bg-gray-50 p-6 rounded-xl shadow-inner">
-            <h3 className="text-xl font-bold mb-4 text-blue-700 border-b pb-2">Nominee Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1">
-              <DetailItem label="Nominee Name" value={profile.nomineeName || 'N/A'} />
-              <DetailItem label="Relationship" value={profile.nomineeRelationship || 'N/A'} />
-              <DetailItem label="Nominee Contact" value={profile.nomineeContactNumber || 'N/A'} />
+          {/* NOMINEE DETAILS (Only display for regular users, not Admins) */}
+          {!isCurrentUserAdmin && (
+            <div className="bg-gray-50 p-6 rounded-xl shadow-inner">
+              <h3 className="text-xl font-bold mb-4 text-blue-700 border-b pb-2">Nominee Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1">
+                <DetailItem label="Nominee Name" value={profile.nomineeName || 'N/A'} />
+                <DetailItem label="Relationship" value={profile.nomineeRelationship || 'N/A'} />
+                <DetailItem label="Nominee Contact" value={profile.nomineeContactNumber || 'N/A'} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

@@ -1,10 +1,7 @@
 import React from 'react';
-import PendingPosts from './PendingPosts'; 
-// Assuming PendingPosts.jsx is in the same directory: src/features/Admin/
+import PendingUsers from './PendingUsers';
 import { useAuth } from '../Auth/useAuth'; 
-// Assuming useAuth is in: src/features/Auth/useAuth.js
 import AuthLayout from '../../components/layouts/AuthLayout'; 
-// Use your specific layout component
 
 const AdminReviewPage = () => {
     const { isAdmin, isLoading, user } = useAuth();
@@ -28,13 +25,11 @@ const AdminReviewPage = () => {
         );
     }
 
-    // 3. Render Admin Content (Layout + PendingPosts)
+    // 3. Render Admin Content (Layout + Users)
     return (
-        // Wrap the content with your main application layout
         <AuthLayout> 
             <div className="admin-review-page p-4 sm:p-8">
-                {/* The core component responsible for fetching and displaying the queue */}
-                <PendingPosts /> 
+                <PendingUsers />
             </div>
         </AuthLayout>
     );
