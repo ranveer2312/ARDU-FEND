@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CommentsList from './CommentsList';
 import CommentInput from './CommentInput';
 
-const CommentsModal = ({ post, currentUser, token, isOpen, onClose, onCommentCountChange }) => {
+const CommentsModal = ({ post, postId, currentUser, token, isOpen, onClose, onCommentCountChange }) => {
     const [commentCount, setCommentCount] = useState(0);
+    const commentsListRef = useRef(null);
+    
+    // Use postId if provided, otherwise use post.id
+    const actualPostId = postId || post?.id;
 
     useEffect(() => {
         if (isOpen) {
@@ -18,6 +22,10 @@ const CommentsModal = ({ post, currentUser, token, isOpen, onClose, onCommentCou
     }, [isOpen]);
 
     const handleCommentAdded = () => {
+        // Refresh the comments list
+        if (commentsListRef.current && commentsListRef.current.refreshComments) {
+            commentsListRef.current.refreshComments();
+        }
         setCommentCount(prev => prev + 1);
         onCommentCountChange && onCommentCountChange(commentCount + 1);
     };
@@ -50,7 +58,8 @@ const CommentsModal = ({ post, currentUser, token, isOpen, onClose, onCommentCou
                 {/* Comments List */}
                 <div className="flex-1 overflow-hidden">
                     <CommentsList
-                        postId={post.id}
+                        ref={commentsListRef}
+                        postId={actualPostId}
                         currentUser={currentUser}
                         token={token}
                         onCommentCountChange={handleCommentCountChange}
@@ -59,7 +68,7 @@ const CommentsModal = ({ post, currentUser, token, isOpen, onClose, onCommentCou
 
                 {/* Comment Input */}
                 <CommentInput
-                    postId={post.id}
+                    postId={actualPostId}
                     currentUser={currentUser}
                     token={token}
                     onCommentAdded={handleCommentAdded}

@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../Auth/useAuth';
 import { addComment } from '../../services/postService';
 import { likePost, unlikePost } from '../Auth/services/reactionService';
-<<<<<<< HEAD
-import { CommentsSection } from '../Comments';
-=======
-import ReactionDetails from '../../components/ReactionDetails';
->>>>>>> bc92a68dc2c1e0f00a7c98f708b6a9c56dda8106
+
+// CORRECTED MERGE: Combine the imports
+import { CommentsSection, CommentsModal } from '../Comments'; // From HEAD
+import ReactionDetails from '../../components/ReactionDetails'; // From bc92a68...
 
 const PostCard = ({ post, currentUser, onPostUpdate }) => {
     const { token } = useAuth();
@@ -20,22 +19,25 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
     const [likeCount, setLikeCount] = useState(post.likes || post.likeCount || 0);
     const [reactors, setReactors] = useState(post.reactors || []);
     
+    // State to manage showing the comments section
+    const [showComments, setShowComments] = useState(false); // Added for comment toggling
+    const [showCommentsModal, setShowCommentsModal] = useState(false); // For modal view
+    
     const [commentCount, setCommentCount] = useState(
         Array.isArray(post.comments) ? post.comments.length : (post.comments || 0)
     );
     const [shareCount, setShareCount] = useState(post.shares || 0);
     const [showReactions, setShowReactions] = useState(false);
     const [showShareOptions, setShowShareOptions] = useState(false);
-<<<<<<< HEAD
-    const [isLiking, setIsLiking] = useState(false);
-=======
+    
+    // CORRECTED MERGE: Combine all necessary state variables
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLiking, setIsLiking] = useState(false); // Used to block sync during optimistic update
     const [showReactionDetails, setShowReactionDetails] = useState(false);
     const [reactionDetails, setReactionDetails] = useState([]);
     const [recentReactors, setRecentReactors] = useState(post.recentReactors || []);
->>>>>>> bc92a68dc2c1e0f00a7c98f708b6a9c56dda8106
+
     const shareRef = useRef(null);
     
     // 💡 FIX 2: Synchronize state with incoming props on every prop change (e.g., fetchPosts completes)
@@ -76,6 +78,7 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
 
     const reactions = [
         { type: 'like', emoji: '👍', label: 'Like' },
+        // ... (rest of reactions)
         { type: 'love', emoji: '❤️', label: 'Love' },
         { type: 'haha', emoji: '😂', label: 'Haha' },
         { type: 'wow', emoji: '😮', label: 'Wow' },
@@ -102,14 +105,12 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
     };
 
 
-<<<<<<< HEAD
-
-
-
+    // CORRECTED MERGE: Keep the logic from both sides, rename old toggle to match new state
     const handleCommentCountChange = (newCount) => {
         setCommentCount(newCount);
         onPostUpdate && onPostUpdate(post.id, { comments: newCount });
-=======
+    };
+
     const handleComment = async () => {
         if (!newComment.trim()) return;
         setIsSubmitting(true);
@@ -126,9 +127,14 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
     };
 
     const toggleComments = () => {
-        setShowComments(!showComments);
->>>>>>> bc92a68dc2c1e0f00a7c98f708b6a9c56dda8106
+        setShowComments(!showComments); // Use the new state variable
     };
+
+    const handleCommentClick = () => {
+        // Open the comments modal directly
+        setShowCommentsModal(true);
+    };
+
 
     const handleReaction = async (reactionType) => {
         if (isLiking || !currentUser?.name) return;
@@ -215,12 +221,14 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
     }, []);
 
     const shareOptions = [
+        // ... (shareOptions array is unchanged)
         {
             name: 'WhatsApp',
             icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/></svg>,
             color: 'text-green-500',
             action: (url) => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`)
         },
+        // ... (remaining share options)
         {
             name: 'Instagram',
             icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>,
@@ -386,13 +394,22 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                         {commentCount > 0 && (
                             <>
                                 <span className="text-gray-400">•</span>
-                                <span className="hover:underline cursor-pointer">
+                                <span className="hover:underline cursor-pointer" onClick={toggleComments}>
                                     {commentCount} comment{commentCount !== 1 ? 's' : ''}
                                 </span>
                             </>
                         )}
                     </div>
                 </div>
+            )}
+            
+            {/* Reaction Details Modal (Component from collaborator's changes) */}
+            {showReactionDetails && (
+                <ReactionDetails
+                    postId={post.id}
+                    token={token}
+                    onClose={() => setShowReactionDetails(false)}
+                />
             )}
 
             {/* Action buttons */}
@@ -453,24 +470,9 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                         )}
                     </div>
                     
-<<<<<<< HEAD
-                    <div className="flex gap-4">
-                        <CommentsSection
-                            post={post}
-                            currentUser={currentUser}
-                            token={token}
-                            onCommentCountChange={handleCommentCountChange}
-                        />
-                        <div className="relative" ref={shareRef}>
-                            <button
-                                onClick={() => handleShare()}
-                                className="flex items-center gap-1 text-gray-600 hover:text-blue-600 text-sm px-3 py-2 rounded-lg hover:bg-gray-100"
-                            >
-                                📤 Share
-                            </button>
-=======
+                    {/* Comment button - opens modal */}
                     <button
-                        onClick={toggleComments}
+                        onClick={handleCommentClick}
                         className="flex-1 flex items-center justify-center gap-1 md:gap-2 py-2 px-1 md:px-3 rounded-lg text-xs md:text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                     >
                         <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,108 +491,89 @@ const PostCard = ({ post, currentUser, onPostUpdate }) => {
                             </svg>
                             <span className="hidden sm:inline">Share</span>
                         </button>
->>>>>>> bc92a68dc2c1e0f00a7c98f708b6a9c56dda8106
+                    
 
-                            {showShareOptions && (
-                                <>
-                                    {/* Mobile Bottom Sheet */}
-                                    <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowShareOptions(false)}>
-                                        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 transform transition-transform duration-300 ease-out">
-                                            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Share</h3>
-                                            
-                                            <div className="grid grid-cols-3 gap-4 mb-6">
-                                                {shareOptions.map((option) => (
-                                                    <button
-                                                        key={option.name}
-                                                        onClick={() => {
-                                                            handleShare(option);
-                                                            setShowShareOptions(false);
-                                                        }}
-                                                        className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
-                                                    >
-                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${option.color} bg-gray-100`}>
-                                                            {option.icon}
-                                                        </div>
-                                                        <span className="text-xs text-gray-700 text-center">{option.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            
-                                            <button
-                                                onClick={() => setShowShareOptions(false)}
-                                                className="w-full py-3 text-center text-gray-600 border-t border-gray-200"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Desktop Dropdown */}
-                                    <div className="hidden md:block absolute bottom-full right-0 mb-2 bg-white rounded-lg shadow-lg border p-3 min-w-48 z-20">
-                                        <div className="text-xs font-semibold text-gray-500 mb-3 px-1">Share to:</div>
+                        {showShareOptions && (
+                            <>
+                                {/* Mobile Bottom Sheet */}
+                                <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowShareOptions(false)}>
+                                    <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 transform transition-transform duration-300 ease-out">
+                                        <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Share</h3>
                                         
-                                        {shareOptions.map((option) => (
-                                            <button
-                                                key={option.name}
-                                                onClick={() => {
-                                                    handleShare(option);
-                                                    setShowShareOptions(false);
-                                                }}
-                                                className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <span className={option.color}>{option.icon}</span>
-                                                <span className="text-gray-700">{option.name}</span>
-                                            </button>
-                                        ))}
+                                        <div className="grid grid-cols-3 gap-4 mb-6">
+                                            {shareOptions.map((option) => (
+                                                <button
+                                                    key={option.name}
+                                                    onClick={() => {
+                                                        handleShare(option);
+                                                        setShowShareOptions(false);
+                                                    }}
+                                                    className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                                                >
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${option.color} bg-gray-100`}>
+                                                        {option.icon}
+                                                    </div>
+                                                    <span className="text-xs text-gray-700 text-center">{option.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => setShowShareOptions(false)}
+                                            className="w-full py-3 text-center text-gray-600 border-t border-gray-200"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
-                                </>
-                            )}
+                                </div>
+                                
+                                {/* Desktop Dropdown */}
+                                <div className="hidden md:block absolute bottom-full right-0 mb-2 bg-white rounded-lg shadow-lg border p-3 min-w-48 z-20">
+                                    <div className="text-xs font-semibold text-gray-500 mb-3 px-1">Share to:</div>
+                                    
+                                    {shareOptions.map((option) => (
+                                        <button
+                                            key={option.name}
+                                            onClick={() => {
+                                                handleShare(option);
+                                                setShowShareOptions(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <span className={option.color}>{option.icon}</span>
+                                            <span className="flex-1 text-left">{option.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
 
-<<<<<<< HEAD
-=======
+            {/* Comments Section (Controlled by the showComments state) */}
             {showComments && (
-                <div className="border-t border-gray-100 bg-gray-50 p-3 md:p-4">
-                    <div className="flex gap-2 md:gap-3 mb-4">
-                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                            {(currentUser?.name || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 flex gap-2">
-                            <input
-                                type="text"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write a comment..."
-                                className="flex-1 px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleComment(); } }}
-                            />
-                            <button
-                                onClick={handleComment}
-                                disabled={!newComment.trim() || isSubmitting}
-                                className="px-3 md:px-4 py-2 bg-blue-600 text-white text-xs md:text-sm rounded-lg disabled:opacity-50 hover:bg-blue-700"
-                            >
-                                {isSubmitting ? '...' : 'Post'}
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div className="text-center py-4 text-gray-600 text-xs md:text-sm">
-                        Comments are saved to database. Display feature coming soon!
-                    </div>
+                <div className="px-3 md:px-4 pt-2 pb-4 border-t border-gray-100">
+                    <CommentsSection
+                        postId={post.id}
+                        currentUser={currentUser}
+                        token={token}
+                        initialCommentCount={commentCount}
+                        onCommentCountChange={handleCommentCountChange}
+                    />
                 </div>
             )}
 
-            {/* Reaction Details Modal */}
-            {showReactionDetails && (
-                <ReactionDetails
-                    postId={post.id}
-                    onClose={() => setShowReactionDetails(false)}
-                />
-            )}
->>>>>>> bc92a68dc2c1e0f00a7c98f708b6a9c56dda8106
+            {/* Comments Modal */}
+            <CommentsModal
+                postId={post.id}
+                currentUser={currentUser}
+                token={token}
+                isOpen={showCommentsModal}
+                onClose={() => setShowCommentsModal(false)}
+                onCommentCountChange={handleCommentCountChange}
+            />
         </div>
     );
 };

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import CommentsModal from './CommentsModal';
 
-const CommentsSection = ({ post, currentUser, token, onCommentCountChange }) => {
+const CommentsSection = ({ post, postId, currentUser, token, onCommentCountChange, initialCommentCount }) => {
     const [showModal, setShowModal] = useState(false);
     const [commentCount, setCommentCount] = useState(
-        Array.isArray(post.comments) ? post.comments.length : (post.comments || 0)
+        initialCommentCount !== undefined 
+            ? initialCommentCount 
+            : (post ? (Array.isArray(post.comments) ? post.comments.length : (post.comments || 0)) : 0)
     );
 
     const handleCommentClick = () => {
@@ -20,6 +22,9 @@ const CommentsSection = ({ post, currentUser, token, onCommentCountChange }) => 
         onCommentCountChange && onCommentCountChange(count);
     };
 
+    // Use postId if provided, otherwise use post.id
+    const actualPostId = postId || post?.id;
+
     return (
         <>
             <div className="flex items-center py-2">
@@ -32,7 +37,7 @@ const CommentsSection = ({ post, currentUser, token, onCommentCountChange }) => 
             </div>
 
             <CommentsModal
-                post={post}
+                postId={actualPostId}
                 currentUser={currentUser}
                 token={token}
                 isOpen={showModal}

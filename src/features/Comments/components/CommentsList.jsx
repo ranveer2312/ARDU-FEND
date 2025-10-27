@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import CommentItem from './CommentItem';
 import { getComments } from '../../../services/postService';
 
-const CommentsList = ({ postId, currentUser, token, onCommentCountChange }) => {
+const CommentsList = forwardRef(({ postId, currentUser, token, onCommentCountChange }, ref) => {
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -20,18 +20,24 @@ const CommentsList = ({ postId, currentUser, token, onCommentCountChange }) => {
             const newComments = response.content || response;
             
             if (append) {
-                setComments(prev => [...prev, ...newComments]);
+                setComments(prev => {
+                    const updated = [...prev, ...newComments];
+                    // Update comment count in parent
+                    if (onCommentCountChange) {
+                        onCommentCountChange(updated.length);
+                    }
+                    return updated;
+                });
             } else {
                 setComments(newComments);
+                // Update comment count in parent
+                if (onCommentCountChange) {
+                    onCommentCountChange(newComments.length);
+                }
             }
             
             setHasMore(newComments.length === 10);
             setPage(pageNum);
-            
-            // Update comment count in parent
-            if (onCommentCountChange) {
-                onCommentCountChange(append ? comments.length + newComments.length : newComments.length);
-            }
         } catch (err) {
             console.error('Error loading comments:', err);
             setError('Failed to load comments');
@@ -49,6 +55,11 @@ const CommentsList = ({ postId, currentUser, token, onCommentCountChange }) => {
     const refreshComments = () => {
         loadComments(0, false);
     };
+
+    // Expose refreshComments to parent via ref
+    useImperativeHandle(ref, () => ({
+        refreshComments
+    }));
 
     useEffect(() => {
         loadComments();
@@ -108,6 +119,8 @@ const CommentsList = ({ postId, currentUser, token, onCommentCountChange }) => {
             )}
         </div>
     );
-};
+});
+
+CommentsList.displayName = 'CommentsList';
 
 export default CommentsList;
