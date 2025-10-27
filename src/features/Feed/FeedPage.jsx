@@ -60,41 +60,71 @@ const FeedPage = () => {
                     postsData = JSON.parse(decodedBody);
                 }
 
-                const formattedPosts = postsData.map(post => {
+                const formattedPosts = await Promise.all(postsData.map(async (post) => {
                     const postUser = post.user || {};
+
+                    // Fetch reaction summary for each post
+                    let reactionData = {
+                        likes: 0,
+                        userReaction: null,
+                        recentReactors: []
+                    };
+
+                    try {
+                        const reactionResponse = await fetch(`http://localhost:8080/api/posts/${post.id}/reactions/summary`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                ...authHeaders
+                            }
+                        });
+                        
+                        if (reactionResponse.ok) {
+                            const reactionSummary = await reactionResponse.json();
+                            reactionData = {
+                                likes: reactionSummary.total || 0,
+                                userReaction: reactionSummary.userReaction || null,
+                                recentReactors: reactionSummary.recentReactors || []
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching reactions for post ${post.id}:`, error);
+                    }
 
                     return {
                         id: post.id,
                         content: post.caption || post.content || post.description || '',
                         
                         // Preserve the entire user object (from the new DTO structure)
-                        user: postUser, 
+                        user: postUser,
                         
                         // Extract userName from the nested structure, falling back to old fields
                         userName: postUser.name || postUser.username || post.userName || post.author || 'Unknown User',
                         createdAt: new Date(post.createdAt || post.created_at || Date.now()),
                         
-                        imageUrl: post.imageUrl || post.image_url || post.contentUrl || null, 
+                        imageUrl: post.imageUrl || post.image_url || post.contentUrl || null,
                         
                         // NEW FIX: Map the profile photo URL from the nested user object
                         // It checks for profilePhotoUrl (ideal) and imageUrl (used in your backend upload)
-                        userProfilePhotoUrl: postUser.profilePhotoUrl || postUser.imageUrl || null, 
+                        userProfilePhotoUrl: postUser.profilePhotoUrl || postUser.imageUrl || null,
                         
                         // Default to empty array to prevent map() errors in PostCard
                         recentReactions: post.recentReactions || [],
                         recentComments: post.recentComments || [],
                         
-                        likes: post.likes || post.likeCount || 0,
+                        // Use fetched reaction data
+                        likes: reactionData.likes,
                         comments: post.comments || post.commentCount || 0,
                         shares: post.shares || post.shareCount || 0,
-                        userReaction: post.userReaction || null, // Assuming the DTO includes userReaction
+                        reactors: post.reactors || [],
+                        userReaction: reactionData.userReaction,
+                        recentReactors: reactionData.recentReactors,
                         
-                        // Note: userLiked, userCommented, etc., should typically come from the DTO
-                        userLiked: post.userLiked || (post.userReaction != null), 
+                        userLiked: reactionData.userReaction != null,
                         userCommented: post.userCommented || false,
                         userShared: post.userShared || false
                     };
-                });
+                }));
 
                 setPosts(formattedPosts);
             } catch (parseErr) {
@@ -140,9 +170,9 @@ const FeedPage = () => {
 
     // Handle post updates (when user interacts with posts)
     const handlePostUpdate = (postId, updatedData) => {
-        setPosts(prevPosts => 
-            prevPosts.map(post => 
-                post.id === postId 
+        setPosts(prevPosts =>
+            prevPosts.map(post =>
+                post.id === postId
                     ? { ...post, ...updatedData }
                     : post
             )
@@ -218,8 +248,8 @@ const FeedPage = () => {
                                 to={tab.path}
                                 className={`
                                     flex items-center px-6 py-4 space-x-2
-                                    ${location.pathname === tab.path 
-                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                    ${location.pathname === tab.path
+                                        ? 'border-b-2 border-blue-500 text-blue-600'
                                         : 'text-gray-500 hover:text-gray-700'}
                                     transition-colors duration-200
                                 `}
