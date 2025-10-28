@@ -19,17 +19,16 @@ import AdminReviewPage from './features/Admin/AdminReviewPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import ProtectedRoute from './components/ProtectedRoute';
 import UserPendingPosts from './features/User/UserPendingPosts';
-import MainTopNav from './components/layouts/MainTopNav';
+import MainLayout  from './components/layouts/MainLayout';
 // import StatusTabs from './components/StatusTabs';
-
-// Component to conditionally show MainTopNav
+// D:\IDMS1.23.50\ARDU-FEND\src\components\layouts\MainLayout.jsx
 const AppContent = () => {
     const location = useLocation();
     const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {!isAuthPage && <MainTopNav />}
+            {!isAuthPage && <MainLayout />}
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Navigate to="/login" replace />} /> 
