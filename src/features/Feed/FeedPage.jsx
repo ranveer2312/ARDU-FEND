@@ -233,31 +233,31 @@ const FeedPage = () => {
     }
 
     // Main feed content
-    return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Navigation Tabs */}
-            <div className="bg-white shadow-sm border-b sticky top-0 z-50">
-                <div className="max-w-2xl mx-auto">
-                    <div className="flex">
-                        {navigationTabs.map(tab => (
-                            <Link
-                                key={tab.path}
-                                to={tab.path}
-                                className={`
-                                    flex items-center px-6 py-4 space-x-2
-                                    ${location.pathname === tab.path
-                                        ? 'border-b-2 border-blue-500 text-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'}
-                                    transition-colors duration-200
-                                `}
-                            >
-                                <span className="text-lg">{tab.icon}</span>
-                                <span>{tab.label}</span>
-                            </Link>
-                        ))}
-                    </div>
+   // Main feed content
+return (
+    <div className="min-h-screen bg-gray-50 pt-20 md:pt-24 overflow-y-auto">
+        {/* Navigation Tabs */}
+        <div className="bg-white shadow-sm border-b sticky top-20 md:top-24 z-40">
+            <div className="max-w-2xl mx-auto">
+                <div className="flex">
+                    {navigationTabs.map(tab => (
+                        <Link
+                            key={tab.path}
+                            to={tab.path}
+                            className={`flex items-center px-6 py-4 space-x-2
+                                ${location.pathname === tab.path
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'}
+                                transition-colors duration-200`}
+                        >
+                            <span className="text-lg">{tab.icon}</span>
+                            <span>{tab.label}</span>
+                        </Link>
+                    ))}
                 </div>
             </div>
+        </div>
+  
 
             {/* Content Area */}
             <div className="max-w-2xl mx-auto px-4 py-4">
