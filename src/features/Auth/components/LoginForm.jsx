@@ -1,114 +1,142 @@
-// src/features/Auth/components/LoginForm.jsx
 import React, { useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { loginUser } from '../services/authService';
 
-// 🛑 Accept onLoginSuccess prop
+/**
+ * LoginForm Component
+ * ------------------------------------------------------------
+ * Handles user login with validation, loading states, 
+ * and success/error feedback.
+ * 
+ * Props:
+ *  - onLoginSuccess: Callback triggered when login succeeds 
+ *    (used by parent component to show animation or loader)
+ * ------------------------------------------------------------
+ */
 const LoginForm = ({ onLoginSuccess }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    
-    // Define a minimum delay for the animation (e.g., 2 seconds)
-    const MIN_LOADER_TIME = 2000; 
+  // ---------- State Variables ----------
+  const [email, setEmail] = useState('');            // stores user email
+  const [password, setPassword] = useState('');      // stores user password
+  const [isLoading, setIsLoading] = useState(false); // indicates API in progress
+  const [error, setError] = useState(null);          // stores error message
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  // Minimum loader animation time (e.g., 2 seconds)
+  const MIN_LOADER_TIME = 2000;
 
-        if (!email || !password) {
-            setError('Please enter both email and password.');
-            return;
-        }
+  // ---------- Form Submit Handler ----------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        // Start API loading phase
-        setIsLoading(true);
-        setError(null);
-        
-        const startTime = Date.now();
+    // 1️⃣ Validation
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
 
-        try {
-            await loginUser(email, password);
-            
-            // --- SUCCESS LOGIC ---
+    // 2️⃣ Start API call phase
+    setIsLoading(true);
+    setError(null);
 
-            // 1. Tell the parent (LoginPage) to show the Auto Rickshaw Loader
-            if (onLoginSuccess) {
-                onLoginSuccess();
-            }
+    const startTime = Date.now();
 
-            // 2. Calculate remaining time needed for the animation
-            const elapsedTime = Date.now() - startTime;
-            const delay = Math.max(0, MIN_LOADER_TIME - elapsedTime);
+    try {
+      // 3️⃣ Attempt login using the provided service
+      await loginUser(email, password);
 
-            // 3. Wait for the required delay to ensure the animation plays out
-            await new Promise(resolve => setTimeout(resolve, delay));
-            
-            console.log('Login successful! Redirecting...');
-            
-            // 4. Perform the final redirection
-            window.location.href = '/feed';
+      // 4️⃣ Notify parent to show loader animation (if provided)
+      if (onLoginSuccess) onLoginSuccess();
 
-        } catch (err) {
-            // --- ERROR LOGIC ---
-            setError(err.message || 'An unexpected error occurred during login.');
-        } finally {
-            // Stop API loading phase immediately on error, or after routing on success
-            if (error) { // Only stop on error, success relies on redirection
-                 setIsLoading(false);
-            }
-        }
-    };
+      // 5️⃣ Ensure loader animation runs for at least MIN_LOADER_TIME
+      const elapsedTime = Date.now() - startTime;
+      const delay = Math.max(0, MIN_LOADER_TIME - elapsedTime);
+      await new Promise((resolve) => setTimeout(resolve, delay));
 
-    return (
-        <div className="p-8 space-y-6">
-            <h1 className="text-3xl font-bold text-center">Login to Auto Community</h1>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {error && <p className="text-sm font-medium text-red-500 bg-red-100 p-2 rounded">{error}</p>}
+      console.log('Login successful! Redirecting...');
+      
+      // 6️⃣ Redirect after successful login
+      window.location.href = '/feed';
+    } catch (err) {
+      // 7️⃣ Display readable error message
+      setError(err.message || 'An unexpected error occurred during login.');
+    } finally {
+      // 8️⃣ Stop loader only if login failed (success triggers redirect)
+      if (error) setIsLoading(false);
+    }
+  };
 
-                <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                        id="email" 
-                        type="email" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
-                        placeholder="john.doe@example.com"
-                    />
-                </div>
+  // ---------- UI Rendering ----------
+  return (
+    <div className="p-8 space-y-6 bg-white rounded-2xl shadow-md">
+      {/* Header */}
+      <h1 className="text-3xl font-bold text-center text-[rgb(180,30,30)]">
+        Log In to Auto Connect
+      </h1>
 
-                <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input 
-                        id="password" 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
-                        placeholder="••••••••"
-                    />
-                </div>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Error message */}
+        {error && (
+          <p className="text-sm font-medium text-red-500 bg-red-100 p-2 rounded">
+            {error}
+          </p>
+        )}
 
-                <Button 
-                    type="submit" 
-                    className="w-full" 
-                    // Button is disabled if waiting for API response OR if the loader animation has started
-                    disabled={isLoading}
-                >
-                    {/* Display standard loading text while waiting for the API response */}
-                    {isLoading ? 'Processing...' : 'Login'} 
-                </Button>
-            </form>
-            
-            <p className="text-center text-sm text-gray-500">
-                Don't have an account? <a href="/register" className="text-blue-600 hover:underline">Register here</a>
-            </p>
+        {/* Email field */}
+        <div>
+          <Label htmlFor="email" className="text-gray-700">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="john.doe@example.com"
+            className="border-gray-300 focus:ring-2 focus:ring-[rgb(180,30,30)]"
+          />
         </div>
-    );
+
+        {/* Password field */}
+        <div>
+          <Label htmlFor="password" className="text-gray-700">
+            Password
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="••••••••"
+            className="border-gray-300 focus:ring-2 focus:ring-[rgb(180,30,30)]"
+          />
+        </div>
+
+        {/* Submit button */}
+        <Button
+          type="submit"
+          className="w-full bg-[rgb(180,30,30)] hover:bg-[rgb(150,25,25)] text-white font-semibold py-2 rounded-md transition-all duration-200"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Processing...' : 'Login'}
+        </Button>
+      </form>
+
+      {/* Register link */}
+      <p className="text-center text-sm text-gray-500">
+        Don’t have an account?{' '}
+        <a
+          href="/register"
+          className="text-[rgb(180,30,30)] font-medium hover:underline"
+        >
+          Register here
+        </a>
+      </p>
+    </div>
+  );
 };
 
 export default LoginForm;
